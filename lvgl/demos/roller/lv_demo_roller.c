@@ -57,7 +57,7 @@ lv_style_t style_icon;
 lv_style_t style_bullet;
 
 int32_t scroll_y;
-uint32_t base_y;
+int32_t base_y;
 uint32_t base_y_start;
 int32_t new_y;
 
@@ -456,9 +456,10 @@ void lv_create_roller(void)
    // lv_obj_center(roller1);
     lv_obj_set_pos(roller1,200,20);
     lv_roller_set_visible_row_count(roller1, 5);
-    lv_roller_set_selected(roller1, 0, LV_ANIM_OFF);
+    //lv_roller_set_selected(roller1, 0, LV_ANIM_OFF);
     //lv_obj_set_style_anim_time(roller1, 500, LV_PART_MAIN);
     lv_obj_set_style_radius(roller1, 5, LV_PART_SELECTED);
+    lv_obj_set_style_anim(roller1, 100, LV_PART_ANY);
 
     lv_obj_add_event_cb(roller1, roller_scroll_event_cb, LV_EVENT_SCROLL | LV_EVENT_SCROLL_BEGIN , NULL);
     lv_obj_add_event_cb(roller1, roller_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
