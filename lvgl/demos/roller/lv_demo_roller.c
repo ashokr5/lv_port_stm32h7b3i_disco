@@ -402,11 +402,13 @@ void lv_create_roller(void)
     lv_obj_set_style_bg_opa(roller1, LV_OPA_50, LV_PART_SELECTED);
     lv_obj_set_style_text_color(roller1, lv_color_make(0x00, 0xD2, 0xFC), LV_PART_SELECTED);
     lv_obj_set_style_bg_color(roller1, lv_color_make(0x00, 0x9A, 0xB8), LV_PART_SELECTED);
+    lv_obj_set_style_text_align(roller1, LV_TEXT_ALIGN_CENTER, LV_PART_ANY);
 
     //lv_obj_set_style_bg_image_recolor_opa(roller1, lv_color_make(0x08, 0x70, 0x97), LV_PART_SELECTED);
     //lv_obj_set_style_arc_color(roller1, lv_color_make(0x08, 0x70, 0x97), LV_PART_SELECTED);
 
     lv_obj_add_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(roller1, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
     lv_roller_set_options(roller1,
                             "0.0mm\n"
                             "0.1mm\n"
