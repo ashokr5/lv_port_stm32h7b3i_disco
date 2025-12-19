@@ -13,8 +13,8 @@
 /*********************
  *      DEFINES
  *********************/
-#define ROLLER_ITEM_MAX		38
-#define BAR_MAX_HEIGHT		152
+#define ROLLER_ITEM_MAX		27
+#define BAR_MAX_HEIGHT		108
 #define BAR_CANVAS_WIDTH	20
 #define BAR_SIZE			(BAR_MAX_HEIGHT/ROLLER_ITEM_MAX/2)
 #define BAR_CANVAS_HEIGHT	(ROLLER_ITEM_MAX*BAR_SIZE*2) + BAR_SIZE
@@ -60,6 +60,8 @@ int32_t scroll_y;
 int32_t base_y;
 uint32_t base_y_start;
 int32_t new_y;
+
+lv_obj_t * roller1;
 
 const lv_font_t * font_large;
 const lv_font_t * font_normal;
@@ -213,6 +215,23 @@ static void timer_step_cb(lv_timer_t * t)
     lv_label_set_text_fmt(txt_xy_label, "scy=%d, ny=%d", scroll_y, new_y);
 
 }
+
+static void roller_press_event_cb(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_LONG_PRESSED)
+    {
+    //	lv_obj_add_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
+    	// lv_obj_add_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
+    }
+
+    if(code == LV_EVENT_RELEASED)
+    {
+    //	 lv_obj_remove_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
+    }
+}
+
+
 static void roller_event_cb(lv_event_t * e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -225,6 +244,8 @@ static void roller_event_cb(lv_event_t * e)
     	ct_index = lv_roller_get_selected(obj);
     	lv_set_actubar_value((uint8_t)ct_index);
     }
+
+
 }
 
 static void roller_scroll_event_cb(lv_event_t * e)
@@ -235,11 +256,13 @@ static void roller_scroll_event_cb(lv_event_t * e)
     if(code == LV_EVENT_SCROLL_BEGIN)
     {
     	base_y = actu_bar1->sel_index;
+
     }
+
 
     if(code == LV_EVENT_SCROLL)
     {
-        new_y = base_y + (scroll_y/10); // 10-> index to pixel size (H)
+        new_y = base_y + (scroll_y/10) + 1; // 10-> index to pixel size (H)
         if(new_y<0)new_y = 0;
         lv_label_set_text_fmt(txt_xy_label, "scy=%d, ney=%d", scroll_y, new_y);
 
@@ -248,7 +271,7 @@ static void roller_scroll_event_cb(lv_event_t * e)
 
     if(code == LV_EVENT_SCROLL_END)
     {
-    	base_y = actu_bar1->sel_index;
+
     }
    // base_y = actu_bar1->sel_index;
 
@@ -299,7 +322,11 @@ void lv_demo_roller(void)
 
 	lv_obj_t * arrowicon = lv_image_create(lv_screen_active());
 	lv_image_set_src(arrowicon, &arrow_icon); // Use a built-in symbol
-	lv_obj_set_pos(arrowicon,180,95);
+	lv_obj_set_pos(arrowicon,180,112);
+
+    txt_xy_label = lv_label_create(lv_screen_active());
+    lv_obj_set_style_text_color(txt_xy_label, lv_color_white(), LV_PART_MAIN);
+    lv_obj_set_pos(txt_xy_label, 0, 180);
 
 
    // lv_obj_t * ltr_label = lv_label_create(lv_screen_active());
@@ -309,7 +336,7 @@ void lv_demo_roller(void)
    // lv_obj_align(ltr_label, LV_ALIGN_TOP_LEFT, 5, 5);
     lv_obj_t * btn = lv_button_create(lv_screen_active());
     lv_obj_set_size(btn, 80, 30);
-    lv_obj_set_pos(btn, 380, 8);
+    lv_obj_set_pos(btn, 380, 180);
     lv_obj_t * btn_label = lv_label_create(btn);
     lv_label_set_text(btn_label, "Click");
     lv_obj_center(btn_label);
@@ -381,34 +408,35 @@ void lv_create_roller(void)
 	LV_IMAGE_DECLARE(arrow_icon); // Declaration
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_black(), 0);
 
-    static lv_style_t style;
+    static lv_style_t style,style_sel;
 
     lv_style_init(&style);
     lv_style_set_bg_color(&style, lv_color_make(0x3F, 0x3F, 0x3F));
     lv_style_set_text_color(&style, lv_color_make(0x74, 0x74, 0x74));//lv_color_make(0x00, 0xD2, 0xFC));
-    lv_style_set_width(&style, 156);
-    //lv_style_set_text_align(&style, LV_TEXT_ALIGN_RIGHT);
+    lv_style_set_width(&style, 142);
+    lv_style_set_height(&style, 108);
     lv_style_set_border_width(&style, 0);
-    lv_style_set_radius(&style, 5);
-   // lv_style_set_bg_grad_color(&style,  lv_color_make(0xab, 0xdc, 0xee));
-    txt_xy_label = lv_label_create(lv_screen_active());
-    lv_obj_set_style_text_color(txt_xy_label, lv_color_white(), LV_PART_MAIN);
+    lv_style_set_radius(&style, 4);
+ // lv_style_set_bg_grad_color(&style,  lv_color_make(0xab, 0xdc, 0xee));
 
-    lv_obj_set_pos(txt_xy_label, 0, 180);
 
-    lv_obj_t * roller1 = lv_roller_create(lv_screen_active());
+    lv_style_init(&style_sel);
+    lv_style_set_bg_color(&style_sel, lv_color_make(0x00, 0x9A, 0xB8));
+    lv_style_set_bg_opa(&style_sel, LV_OPA_50);
+    lv_style_set_text_color(&style_sel,  lv_color_make(0x00, 0xD2, 0xFC));
+    lv_style_set_width(&style_sel, 142);
+    lv_style_set_height(&style_sel, 24);
+    lv_style_set_radius(&style_sel, 4);
 
+    roller1 = lv_roller_create(lv_screen_active());
     lv_obj_add_style(roller1, &style, LV_PART_MAIN);
-    lv_obj_set_style_bg_opa(roller1, LV_OPA_50, LV_PART_SELECTED);
-    lv_obj_set_style_text_color(roller1, lv_color_make(0x00, 0xD2, 0xFC), LV_PART_SELECTED);
-    lv_obj_set_style_bg_color(roller1, lv_color_make(0x00, 0x9A, 0xB8), LV_PART_SELECTED);
-    lv_obj_set_style_text_align(roller1, LV_TEXT_ALIGN_CENTER, LV_PART_ANY);
+    lv_obj_add_style(roller1, &style_sel, LV_PART_SELECTED);
 
     //lv_obj_set_style_bg_image_recolor_opa(roller1, lv_color_make(0x08, 0x70, 0x97), LV_PART_SELECTED);
     //lv_obj_set_style_arc_color(roller1, lv_color_make(0x08, 0x70, 0x97), LV_PART_SELECTED);
 
-    lv_obj_add_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(roller1, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+   // lv_obj_add_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
+   // lv_obj_remove_flag(roller1, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
     lv_roller_set_options(roller1,
                             "0.0mm\n"
                             "0.1mm\n"
@@ -436,7 +464,8 @@ void lv_create_roller(void)
 							"2.3mm\n"
 							"2.4mm\n"
 							"2.5mm\n"
-							"2.6mm\n"
+							"2.6mm\n",
+#if 0
 							"2.7mm\n"
 							"2.8mm\n"
 							"2.9mm\n"
@@ -448,21 +477,23 @@ void lv_create_roller(void)
 							"3.5mm\n"
 							"3.6mm\n"
 							"3.7mm\n"
-							"3.8mm\n",
+							"3.8mm",
 						//	"3.9mm\n"
 						//	"4.0mm\n",
+#endif
                           LV_ROLLER_MODE_NORMAL);
-
-   // lv_obj_center(roller1);
-    lv_obj_set_pos(roller1,200,20);
+    lv_obj_set_style_text_line_space(roller1, 3, LV_PART_MAIN);
     lv_roller_set_visible_row_count(roller1, 5);
-    //lv_roller_set_selected(roller1, 0, LV_ANIM_OFF);
-    //lv_obj_set_style_anim_time(roller1, 500, LV_PART_MAIN);
-    lv_obj_set_style_radius(roller1, 5, LV_PART_SELECTED);
-    lv_obj_set_style_anim(roller1, 100, LV_PART_ANY);
+    lv_roller_set_selected(roller1, 0, LV_ANIM_OFF);
+    lv_obj_set_style_text_align(roller1, LV_ALIGN_CENTER, LV_PART_MAIN);
+    lv_obj_set_pos(roller1,200,70);
+   // lv_obj_set_style_anim_time(roller1, 500, LV_PART_MAIN);
 
+    lv_obj_remove_flag(roller1, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+	lv_obj_add_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_event_cb(roller1, roller_scroll_event_cb, LV_EVENT_SCROLL | LV_EVENT_SCROLL_BEGIN , NULL);
-    lv_obj_add_event_cb(roller1, roller_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(roller1, roller_event_cb, LV_EVENT_VALUE_CHANGED , NULL);
+    lv_obj_add_event_cb(roller1, roller_press_event_cb, LV_EVENT_PRESSED | LV_EVENT_LONG_PRESSED | LV_EVENT_RELEASED, NULL);
 
    // lv_timer_create(timer_step_cb, 1000, NULL);
     /* Create the mask to make the top and bottom part of roller faded.
@@ -511,7 +542,7 @@ void lv_draw_actu_bar(uint8_t size)
 
     lv_canvas_finish_layer(actu_bar1->canvas, &actu_bar1->layer);
 
-    lv_obj_set_pos(actu_bar1->canvas, 150,26);
+    lv_obj_set_pos(actu_bar1->canvas, 150,70);
 
     #if 0
     /*Create style*/
