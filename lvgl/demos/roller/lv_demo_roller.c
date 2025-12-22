@@ -13,11 +13,16 @@
 /*********************
  *      DEFINES
  *********************/
-#define ROLLER_ITEM_MAX		27
-#define BAR_MAX_HEIGHT		108
+#define ROLLER_ITEM_MAX		36
+#define ROLLER_WIDTH		142
+#define ROLLER_HEIGHT		108
+
+#define BAR_MAX_HEIGHT		ROLLER_HEIGHT
 #define BAR_CANVAS_WIDTH	20
-#define BAR_SIZE			(BAR_MAX_HEIGHT/ROLLER_ITEM_MAX/2)
-#define BAR_CANVAS_HEIGHT	(ROLLER_ITEM_MAX*BAR_SIZE*2) + BAR_SIZE
+#define BAR_HEIGHT			2 //(BAR_MAX_HEIGHT/ROLLER_ITEM_MAX/2)
+#define BAR_HEIGHT_OFFSET 	1
+#define BAR_GAP_HEIGHT		(BAR_HEIGHT-1)
+#define BAR_CANVAS_HEIGHT	((ROLLER_ITEM_MAX)*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET)
 
 
 
@@ -43,6 +48,7 @@ typedef struct {
     lv_layer_t layer;
     lv_draw_line_dsc_t dsc;
     uint8_t sel_index;
+
 
 }actu_bar;
 
@@ -75,8 +81,9 @@ lv_obj_t * ltr_label2;
 volatile uint32_t ct_index=0;
 volatile uint32_t op_count=0;
 static void timer_step_cb(lv_timer_t * timer);
+void lv_draw_actubar(actu_bar *bar, int32_t x, int32_t y);
 
-actu_bar *actu_bar1;
+actu_bar *actu_bar1, *actu_bar2;
 /**********************
  *      MACROS
  **********************/
@@ -242,7 +249,7 @@ static void roller_event_cb(lv_event_t * e)
        // lv_roller_get_selected_str(obj, buf, sizeof(buf));
       //  LV_LOG_USER("Selected value: %s", buf);
     	ct_index = lv_roller_get_selected(obj);
-    	lv_set_actubar_value((uint8_t)ct_index);
+    	lv_set_actubar_value(actu_bar1,(uint8_t)ct_index);
     }
 
 
@@ -315,10 +322,14 @@ static void event_cb(lv_event_t * e)
 
 void lv_demo_roller(void)
 {
+	LV_IMAGE_DECLARE(arrow_icon); // Declaration
+    lv_obj_set_style_bg_color(lv_screen_active(), lv_color_black(), 0);
 
 	lv_create_roller();
 
-	lv_draw_actu_bar();
+	lv_draw_actubar(actu_bar1, 150, 70);
+
+	lv_draw_actubar(actu_bar2, 50, 70);
 
 	lv_obj_t * arrowicon = lv_image_create(lv_screen_active());
 	lv_image_set_src(arrowicon, &arrow_icon); // Use a built-in symbol
@@ -328,6 +339,9 @@ void lv_demo_roller(void)
     lv_obj_set_style_text_color(txt_xy_label, lv_color_white(), LV_PART_MAIN);
     lv_obj_set_pos(txt_xy_label, 0, 180);
 
+    lv_set_actubar_value(actu_bar1, 0);
+
+    lv_set_actubar_value(actu_bar2, 20);
 
    // lv_obj_t * ltr_label = lv_label_create(lv_screen_active());
    // lv_label_set_text(ltr_label, "Text in ENG, JAP, PER CHI");
@@ -405,16 +419,13 @@ static void generate_mask(lv_draw_buf_t * mask)
 
 void lv_create_roller(void)
 {
-	LV_IMAGE_DECLARE(arrow_icon); // Declaration
-    lv_obj_set_style_bg_color(lv_screen_active(), lv_color_black(), 0);
-
     static lv_style_t style,style_sel;
 
     lv_style_init(&style);
     lv_style_set_bg_color(&style, lv_color_make(0x3F, 0x3F, 0x3F));
     lv_style_set_text_color(&style, lv_color_make(0x74, 0x74, 0x74));//lv_color_make(0x00, 0xD2, 0xFC));
-    lv_style_set_width(&style, 142);
-    lv_style_set_height(&style, 108);
+    lv_style_set_width(&style, ROLLER_WIDTH);
+    lv_style_set_height(&style, ROLLER_HEIGHT);
     lv_style_set_border_width(&style, 0);
     lv_style_set_radius(&style, 4);
  // lv_style_set_bg_grad_color(&style,  lv_color_make(0xab, 0xdc, 0xee));
@@ -424,7 +435,7 @@ void lv_create_roller(void)
     lv_style_set_bg_color(&style_sel, lv_color_make(0x00, 0x9A, 0xB8));
     lv_style_set_bg_opa(&style_sel, LV_OPA_50);
     lv_style_set_text_color(&style_sel,  lv_color_make(0x00, 0xD2, 0xFC));
-    lv_style_set_width(&style_sel, 142);
+    lv_style_set_width(&style_sel, ROLLER_WIDTH);
     lv_style_set_height(&style_sel, 24);
     lv_style_set_radius(&style_sel, 4);
 
@@ -464,8 +475,7 @@ void lv_create_roller(void)
 							"2.3mm\n"
 							"2.4mm\n"
 							"2.5mm\n"
-							"2.6mm\n",
-#if 0
+							"2.6mm\n"
 							"2.7mm\n"
 							"2.8mm\n"
 							"2.9mm\n"
@@ -474,26 +484,25 @@ void lv_create_roller(void)
 							"3.2mm\n"
 							"3.3mm\n"
 							"3.4mm\n"
-							"3.5mm\n"
-							"3.6mm\n"
-							"3.7mm\n"
-							"3.8mm",
-						//	"3.9mm\n"
+							"3.5mm",
+							//"3.6mm\n"
+							//"3.7mm\n"
+							//"3.8mm\n"
+							//"3.9mm",
 						//	"4.0mm\n",
-#endif
                           LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_style_text_line_space(roller1, 3, LV_PART_MAIN);
+    lv_obj_set_style_text_line_space(roller1, 4, LV_PART_MAIN);
     lv_roller_set_visible_row_count(roller1, 5);
-    lv_roller_set_selected(roller1, 0, LV_ANIM_OFF);
+    //lv_roller_set_selected(roller1, 0, LV_ANIM_OFF);
     lv_obj_set_style_text_align(roller1, LV_ALIGN_CENTER, LV_PART_MAIN);
     lv_obj_set_pos(roller1,200,70);
    // lv_obj_set_style_anim_time(roller1, 500, LV_PART_MAIN);
 
-    lv_obj_remove_flag(roller1, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
-	lv_obj_add_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_event_cb(roller1, roller_scroll_event_cb, LV_EVENT_SCROLL | LV_EVENT_SCROLL_BEGIN , NULL);
+    //lv_obj_remove_flag(roller1, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+	//lv_obj_add_flag(roller1, LV_OBJ_FLAG_SCROLLABLE);
+    //lv_obj_add_event_cb(roller1, roller_scroll_event_cb, LV_EVENT_SCROLL | LV_EVENT_SCROLL_BEGIN , NULL);
     lv_obj_add_event_cb(roller1, roller_event_cb, LV_EVENT_VALUE_CHANGED , NULL);
-    lv_obj_add_event_cb(roller1, roller_press_event_cb, LV_EVENT_PRESSED | LV_EVENT_LONG_PRESSED | LV_EVENT_RELEASED, NULL);
+    //lv_obj_add_event_cb(roller1, roller_press_event_cb, LV_EVENT_PRESSED | LV_EVENT_LONG_PRESSED | LV_EVENT_RELEASED, NULL);
 
    // lv_timer_create(timer_step_cb, 1000, NULL);
     /* Create the mask to make the top and bottom part of roller faded.
@@ -508,7 +517,7 @@ void lv_create_roller(void)
 
 
 
-void lv_draw_actu_bar(uint8_t size)
+void lv_draw_actubar(actu_bar *bar, int32_t x, int32_t y)
 {
 
     /*Create a buffer for the canvas*/
@@ -516,86 +525,68 @@ void lv_draw_actu_bar(uint8_t size)
     LV_DRAW_BUF_INIT_STATIC(draw_bar_buf);
 
     /*Create a canvas and initialize its palette*/
-    actu_bar1->canvas = lv_canvas_create(lv_screen_active());
-    lv_canvas_set_draw_buf(actu_bar1->canvas, &draw_bar_buf);
-    lv_canvas_fill_bg(actu_bar1->canvas, lv_color_make(0x3F, 0x3F, 0x3F), LV_OPA_COVER);
+    bar->canvas = lv_canvas_create(lv_screen_active());
+    lv_canvas_set_draw_buf(bar->canvas, &draw_bar_buf);
+    lv_canvas_fill_bg(bar->canvas, lv_color_make(0x3F, 0x3F, 0x3F), LV_OPA_COVER);
 
-    lv_canvas_init_layer(actu_bar1->canvas, &actu_bar1->layer);
+    lv_canvas_init_layer(bar->canvas, &actu_bar1->layer);
 
-    lv_draw_line_dsc_init(&actu_bar1->dsc);
+    lv_draw_line_dsc_init(&bar->dsc);
 
-    actu_bar1->dsc.color = lv_palette_main(LV_PALETTE_GREY);
-    actu_bar1->dsc.width = BAR_SIZE;
-    actu_bar1->dsc.round_end = 1;
-    actu_bar1->dsc.round_start = 1;
+    bar->dsc.color = lv_palette_main(LV_PALETTE_GREY);
+    bar->dsc.width = BAR_HEIGHT;
+    bar->dsc.round_end = 1;
+    bar->dsc.round_start = 1;
+
 
     for(int i=0;i< ROLLER_ITEM_MAX ;i++)
     {
 
-    	actu_bar1->dsc.p1.x = 0;
-    	actu_bar1->dsc.p1.y = i*BAR_SIZE*2;
-    	actu_bar1->dsc.p2.x = BAR_CANVAS_WIDTH;
-    	actu_bar1->dsc.p2.y = i*BAR_SIZE*2;
-    	lv_draw_line(&actu_bar1->layer, &actu_bar1->dsc);
+    	bar->dsc.p1.x = 0;
+    	bar->dsc.p1.y = i*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
+    	bar->dsc.p2.x = BAR_CANVAS_WIDTH;
+    	bar->dsc.p2.y = i*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
+    	lv_draw_line(&bar->layer, &bar->dsc);
 
     }
 
-    lv_canvas_finish_layer(actu_bar1->canvas, &actu_bar1->layer);
+    lv_canvas_finish_layer(bar->canvas, &bar->layer);
 
-    lv_obj_set_pos(actu_bar1->canvas, 150,70);
+    lv_obj_set_pos(bar->canvas, x,y);
 
-    #if 0
-    /*Create style*/
-    static lv_style_t style_line;
-    lv_style_init(&style_line);
-    lv_style_set_line_width(&style_line, 2);
-    lv_style_set_line_color(&style_line, lv_palette_main(LV_PALETTE_GREY));
-    lv_style_set_line_rounded(&style_line, true);
+    bar->sel_index =0;
 
-    /*Create a line and apply the new style*/
-    lv_obj_t * line1, * line2, * line3;
-    line1 = lv_line_create(lv_scr_act());
-    lv_line_set_points(line1, line1_points, 2);     /*Set the points*/
-    lv_obj_add_style(line1, &style_line, 0);
-
-    line2 = lv_line_create(lv_scr_act());
-    lv_line_set_points(line2, line2_points, 2);     /*Set the points*/
-    lv_obj_add_style(line2, &style_line, 0);
-
-    line3 = lv_line_create(lv_scr_act());
-    lv_line_set_points(line3, line3_points, 2);     /*Set the points*/
-    lv_obj_add_style(line3, &style_line, 0);
-#endif
-   // lv_obj_set_pos(line1,140,25);
 
 }
 
 
 
-void lv_set_actubar_value(uint8_t value)
+void lv_set_actubar_value(actu_bar *bar, uint8_t value)
 {
 
 	static uint8_t bar_offset = 2;
 
+	value = value;
+
 	if(value < ROLLER_ITEM_MAX)
 	{
-	    actu_bar1->dsc.color = lv_palette_main(LV_PALETTE_GREY);
-    	actu_bar1->dsc.p1.x = 0;
-    	actu_bar1->dsc.p1.y = actu_bar1->sel_index*BAR_SIZE*2;
-    	actu_bar1->dsc.p2.x = BAR_CANVAS_WIDTH;
-    	actu_bar1->dsc.p2.y = actu_bar1->sel_index*BAR_SIZE*2;
-    	lv_draw_line(&actu_bar1->layer, &actu_bar1->dsc);
+	    bar->dsc.color = lv_palette_main(LV_PALETTE_GREY);
+	    bar->dsc.p1.x = 0;
+	    bar->dsc.p1.y = bar->sel_index*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
+	    bar->dsc.p2.x = BAR_CANVAS_WIDTH;
+	    bar->dsc.p2.y = bar->sel_index*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
+    	lv_draw_line(&bar->layer, &bar->dsc);
 
-	    actu_bar1->dsc.color = lv_palette_main(LV_PALETTE_BLUE);
-    	actu_bar1->dsc.p1.x = 0;
-    	actu_bar1->dsc.p1.y = value*BAR_SIZE*2;
-    	actu_bar1->dsc.p2.x = BAR_CANVAS_WIDTH;
-    	actu_bar1->dsc.p2.y = value*BAR_SIZE*2;
-    	lv_draw_line(&actu_bar1->layer, &actu_bar1->dsc);
+    	bar->dsc.color = lv_palette_main(LV_PALETTE_BLUE);
+    	bar->dsc.p1.x = 0;
+    	bar->dsc.p1.y = value*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
+    	bar->dsc.p2.x = BAR_CANVAS_WIDTH;
+    	bar->dsc.p2.y = value*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
+    	lv_draw_line(&bar->layer, &bar->dsc);
 
-		actu_bar1->sel_index = value;
+    	bar->sel_index = value;
 
-	    lv_canvas_finish_layer(actu_bar1->canvas, &actu_bar1->layer);
+	    lv_canvas_finish_layer(bar->canvas, &bar->layer);
 
 	}
 
@@ -644,14 +635,6 @@ void lv_example_bar(void)
 }
 
 
-void lv_bar_setRangeLevel(uint8_t value)
-{
-	//lv_bar_set_range(bar, value, value+2);
-   // lv_bar_set_value(bar, value+2, LV_ANIM_OFF);
-	lv_bar_set_start_value(levbar, value*2, LV_ANIM_OFF);
-    lv_bar_set_value(levbar, (value*2) +1, LV_ANIM_OFF);
-
-}
 
 
 
