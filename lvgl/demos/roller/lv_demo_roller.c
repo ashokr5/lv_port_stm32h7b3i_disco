@@ -7,6 +7,9 @@
  *      INCLUDES
  *********************/
 #include <lvgl/demos/roller/lv_demo_roller.h>
+#include "lv_comp_actubar.h"
+#include "lv_comp_roller.h"
+
 #include "../../lvgl.h"
 
 #if LV_USE_DEMO_ROLLER
@@ -16,14 +19,6 @@
 #define ROLLER_ITEM_MAX		36
 #define ROLLER_WIDTH		142
 #define ROLLER_HEIGHT		108
-
-#define BAR_MAX_HEIGHT		ROLLER_HEIGHT
-#define BAR_CANVAS_WIDTH	20
-#define BAR_HEIGHT			2 //(BAR_MAX_HEIGHT/ROLLER_ITEM_MAX/2)
-#define BAR_HEIGHT_OFFSET 	1
-#define BAR_GAP_HEIGHT		(BAR_HEIGHT-1)
-#define BAR_CANVAS_HEIGHT	((ROLLER_ITEM_MAX)*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET)
-
 
 
 /**********************
@@ -42,20 +37,10 @@ typedef enum {
  *  STATIC VARIABLES
  **********************/
 
-typedef struct {
-
-	lv_obj_t *canvas;
-    lv_layer_t layer;
-    lv_draw_line_dsc_t dsc;
-    uint8_t sel_index;
-
-
-}actu_bar;
 
 /**********************
  *  GLOBAL VARIABLES
  **********************/
-lv_obj_t * tv;
 disp_size_t disp_size;
 lv_style_t style_title;
 lv_style_t style_text_muted;
@@ -67,10 +52,14 @@ int32_t base_y;
 uint32_t base_y_start;
 int32_t new_y;
 
-lv_obj_t * roller1;
+lv_obj_t * roller1, *roller_p1;
 
 const lv_font_t * font_large;
 const lv_font_t * font_normal;
+const uint8_t roller_item_list[] ="0.0mm\n0.1mm\n0.2mm\n0.3mm\n0.4mm\n0.5mm\n0.6mm\n0.7mm\n0.8mm\n0.9mm\n"
+        			"1.0mm\n1.1mm\n1.2mm\n1.3mm\n1.4mm\n1.5mm\n1.6mm\n1.7mm\n1.8mm\n1.9mm\n"
+					"2.0mm\n2.1mm\n2.2mm\n2.3mm\n2.4mm\n2.5mm\n2.6mm\n2.7mm\n2.8mm\n2.9mm\n"
+					"3.0mm\n3.1mm\n3.2mm\n3.3mm\n3.4mm\n3.5mm";
 
 uint32_t toggle_text=0;
 lv_style_t style_japanese;
@@ -81,9 +70,8 @@ lv_obj_t * ltr_label2;
 volatile uint32_t ct_index=0;
 volatile uint32_t op_count=0;
 static void timer_step_cb(lv_timer_t * timer);
-void lv_draw_actubar(actu_bar *bar, int32_t x, int32_t y);
 
-actu_bar *actu_bar1, *actu_bar2;
+actubar_t *actu_bar1, *actu_bar2;
 /**********************
  *      MACROS
  **********************/
@@ -112,22 +100,6 @@ const lv_image_dsc_t arrow_icon = {
   .data = arrow_icon_map,
 };
 
-
-const uint8_t img_skew_strip2_map[] = {
-  0x26, 0x26, 0x26, 0xff, 0x27, 0x27, 0x27, 0xff, 0x27, 0x27, 0x27, 0xff, 0x27, 0x27, 0x27, 0xff, 0x26, 0x26, 0x26, 0xff, 0x26, 0x26, 0x26, 0xff, 0x25, 0x25, 0x25, 0xff, 0x25, 0x25, 0x25, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff,
-  0x62, 0x62, 0x62, 0xff, 0x72, 0x72, 0x72, 0xff, 0x72, 0x72, 0x72, 0xff, 0x72, 0x72, 0x72, 0xff, 0x73, 0x73, 0x73, 0xff, 0x73, 0x73, 0x73, 0xff, 0x73, 0x73, 0x73, 0xff, 0x74, 0x74, 0x74, 0xff, 0x74, 0x74, 0x74, 0xff, 0x74, 0x74, 0x74, 0xff, 0x74, 0x74, 0x74, 0xff, 0x74, 0x74, 0x74, 0xff, 0x73, 0x73, 0x73, 0xff, 0x73, 0x73, 0x73, 0xff, 0x73, 0x73, 0x73, 0xff, 0x72, 0x72, 0x72, 0xff, 0x72, 0x72, 0x72, 0xff, 0x71, 0x71, 0x71, 0xff, 0x71, 0x71, 0x71, 0xff, 0x71, 0x71, 0x71, 0xff, 0x70, 0x70, 0x70, 0xff, 0x70, 0x70, 0x70, 0xff, 0x70, 0x70, 0x70, 0xff, 0x6f, 0x6f, 0x6f, 0xff, 0x6f, 0x6f, 0x6f, 0xff, 0x6e, 0x6e, 0x6e, 0xff, 0x6e, 0x6e, 0x6e, 0xff, 0x6e, 0x6e, 0x6e, 0xff, 0x6d, 0x6d, 0x6d, 0xff, 0x5d, 0x5d, 0x5d, 0xff,
-  0x4d, 0x4d, 0x4d, 0xff, 0x5a, 0x5a, 0x5a, 0xff, 0x5b, 0x5b, 0x5b, 0xff, 0x5b, 0x5b, 0x5b, 0xff, 0x5c, 0x5c, 0x5c, 0xff, 0x5c, 0x5c, 0x5c, 0xff, 0x5c, 0x5c, 0x5c, 0xff, 0x5d, 0x5d, 0x5d, 0xff, 0x5d, 0x5d, 0x5d, 0xff, 0x5e, 0x5e, 0x5e, 0xff, 0x5e, 0x5e, 0x5e, 0xff, 0x5f, 0x5f, 0x5f, 0xff, 0x5f, 0x5f, 0x5f, 0xff, 0x61, 0x61, 0x61, 0xff, 0x61, 0x61, 0x61, 0xff, 0x62, 0x62, 0x62, 0xff, 0x62, 0x62, 0x62, 0xff, 0x62, 0x62, 0x62, 0xff, 0x63, 0x63, 0x63, 0xff, 0x63, 0x63, 0x63, 0xff, 0x64, 0x64, 0x64, 0xff, 0x64, 0x64, 0x64, 0xff, 0x65, 0x65, 0x65, 0xff, 0x65, 0x65, 0x65, 0xff, 0x66, 0x66, 0x66, 0xff, 0x66, 0x66, 0x66, 0xff, 0x67, 0x67, 0x67, 0xff, 0x67, 0x67, 0x67, 0xff, 0x68, 0x68, 0x68, 0xff, 0x59, 0x59, 0x59, 0xff,
-  0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff, 0x24, 0x24, 0x24, 0xff,
-};
-
-const lv_image_dsc_t img_skew_strip2 = {
-  .header.cf = LV_COLOR_FORMAT_ARGB8888,
-  .header.magic = LV_IMAGE_HEADER_MAGIC,
-  .header.w = 30,
-  .header.h = 4,
-  .data_size = 120 * 4,
-  .data = img_skew_strip2_map,
-};
 
 lv_obj_t *levbar;
 lv_obj_t * txt_xy_label;
@@ -245,11 +217,8 @@ static void roller_event_cb(lv_event_t * e)
     lv_obj_t * obj = lv_event_get_target_obj(e);
 
     if(code == LV_EVENT_VALUE_CHANGED) {
-       // char buf[32];
-       // lv_roller_get_selected_str(obj, buf, sizeof(buf));
-      //  LV_LOG_USER("Selected value: %s", buf);
     	ct_index = lv_roller_get_selected(obj);
-    	lv_set_actubar_value(actu_bar1,(uint8_t)ct_index);
+    	lv_comp_actubar_set_value(actu_bar2,(uint8_t)ct_index);
     }
 
 
@@ -273,7 +242,7 @@ static void roller_scroll_event_cb(lv_event_t * e)
         if(new_y<0)new_y = 0;
         lv_label_set_text_fmt(txt_xy_label, "scy=%d, ney=%d", scroll_y, new_y);
 
-        lv_set_actubar_value(new_y);
+        lv_comp_actubar_set_value(actu_bar1, new_y);
     }
 
     if(code == LV_EVENT_SCROLL_END)
@@ -325,23 +294,25 @@ void lv_demo_roller(void)
 	LV_IMAGE_DECLARE(arrow_icon); // Declaration
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_black(), 0);
 
-	lv_create_roller();
+	//lv_create_roller();
 
-	lv_draw_actubar(actu_bar1, 150, 70);
-
-	lv_draw_actubar(actu_bar2, 50, 70);
+    create_roller();
 
 	lv_obj_t * arrowicon = lv_image_create(lv_screen_active());
 	lv_image_set_src(arrowicon, &arrow_icon); // Use a built-in symbol
-	lv_obj_set_pos(arrowicon,180,112);
+	lv_obj_set_pos(arrowicon,180,138);
 
     txt_xy_label = lv_label_create(lv_screen_active());
     lv_obj_set_style_text_color(txt_xy_label, lv_color_white(), LV_PART_MAIN);
     lv_obj_set_pos(txt_xy_label, 0, 180);
 
-    lv_set_actubar_value(actu_bar1, 0);
+	actu_bar1 = lv_comp_actubar_draw(lv_screen_active(), 50, 90);
 
-    lv_set_actubar_value(actu_bar2, 20);
+	actu_bar2 = lv_comp_actubar_draw(lv_screen_active(), 150, 90);
+
+    lv_comp_actubar_set_value(actu_bar1, 0);
+
+    lv_comp_actubar_set_value(actu_bar2, 2);
 
    // lv_obj_t * ltr_label = lv_label_create(lv_screen_active());
    // lv_label_set_text(ltr_label, "Text in ENG, JAP, PER CHI");
@@ -379,11 +350,104 @@ static void roller_rotary_event_cb(lv_event_t * e)
     }
 }
 #endif
+
+
+static void generate_mask(lv_draw_buf_t * mask)
+{
+    lv_obj_t * canvas = lv_canvas_create(lv_screen_active());
+    lv_canvas_set_draw_buf(canvas, mask);
+    lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_TRANSP);
+
+    lv_layer_t layer;
+    lv_canvas_init_layer(canvas, &layer);
+
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_grad.dir = LV_GRAD_DIR_VER;
+
+    rect_dsc.bg_grad.stops[0].color = lv_color_hex(0x171717);//0x008B8Blv_color_black();// lv_color_make(0x38, 0x38, 0x38);
+    rect_dsc.bg_grad.stops[1].color = lv_color_black();
+    rect_dsc.bg_grad.stops[0].opa = LV_OPA_100;
+    rect_dsc.bg_grad.stops[1].opa = LV_OPA_0;
+
+    lv_area_t a = {0, 0, mask->header.w - 1,( mask->header.h / 4) + 4};
+    lv_draw_rect(&layer, &rect_dsc, &a);
+
+    a.y1 = mask->header.h - ((mask->header.h / 4) + 4);
+    a.y2 = mask->header.h - 1;
+    rect_dsc.bg_grad.stops[0].color = lv_color_black();
+    rect_dsc.bg_grad.stops[1].color = lv_color_hex(0x171717); //grey
+    rect_dsc.bg_grad.stops[0].opa = LV_OPA_0;
+    rect_dsc.bg_grad.stops[1].opa = LV_OPA_100;
+    lv_draw_rect(&layer, &rect_dsc, &a);
+    lv_canvas_finish_layer(canvas, &layer);
+    lv_obj_delete(canvas);
+}
+
+static void generate_mask_top(lv_draw_buf_t * mask)
+{
+    lv_obj_t * canvas = lv_canvas_create(lv_screen_active());
+    lv_canvas_set_draw_buf(canvas, mask);
+    lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_TRANSP);
+
+    lv_layer_t layer;
+    lv_canvas_init_layer(canvas, &layer);
+
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_grad.dir = LV_GRAD_DIR_VER;
+
+    rect_dsc.bg_grad.stops[0].color = lv_color_make(0x38, 0x38, 0x38);
+    rect_dsc.bg_grad.stops[1].color = lv_color_make(0x38, 0x38, 0x38);
+    rect_dsc.bg_grad.stops[0].opa = LV_OPA_60;
+    rect_dsc.bg_grad.stops[1].opa = LV_OPA_0;
+
+    lv_area_t a = {0, 0, mask->header.w - 1,( mask->header.h / 6)};
+    lv_draw_rect(&layer, &rect_dsc, &a);
+
+  //  a.y1 = (mask->header.h / 5) + 10;
+  //  a.y2 = mask->header.h - 1;
+  //  rect_dsc.bg_grad.stops[0].color = lv_color_make(0x38, 0x38, 0x38);
+  //  rect_dsc.bg_grad.stops[1].color = lv_color_make(0x38, 0x38, 0x38); //grey
+  //  rect_dsc.bg_grad.stops[0].opa = LV_OPA_0;
+  //  rect_dsc.bg_grad.stops[1].opa = LV_OPA_80;
+  //  lv_draw_rect(&layer, &rect_dsc, &a);
+
+
+    lv_canvas_finish_layer(canvas, &layer);
+    lv_obj_delete(canvas);
+}
+
+
+static void generate_mask_bottom(lv_draw_buf_t * mask)
+{
+    lv_obj_t * canvas = lv_canvas_create(lv_screen_active());
+    lv_canvas_set_draw_buf(canvas, mask);
+    lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_TRANSP);
+
+    lv_layer_t layer;
+    lv_canvas_init_layer(canvas, &layer);
+
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_grad.dir = LV_GRAD_DIR_VER;
+
+    lv_area_t a = {0, mask->header.h - (mask->header.h / 6) , mask->header.w - 1, mask->header.h - 1 };
+    lv_draw_rect(&layer, &rect_dsc, &a);
+
+    rect_dsc.bg_grad.stops[0].color = lv_color_make(0x38, 0x38, 0x38);
+    rect_dsc.bg_grad.stops[1].color = lv_color_make(0x38, 0x38, 0x38); //grey
+    rect_dsc.bg_grad.stops[0].opa = LV_OPA_0;
+    rect_dsc.bg_grad.stops[1].opa = LV_OPA_60;
+    lv_draw_rect(&layer, &rect_dsc, &a);
+    lv_canvas_finish_layer(canvas, &layer);
+    lv_obj_delete(canvas);
+}
 /**
  * Add a fade mask to roller.
  */
 
-static void generate_mask(lv_draw_buf_t * mask)
+static void generate_mask2(lv_draw_buf_t * mask)
 {
     /*Create a "8 bit alpha" canvas and clear it*/
     lv_obj_t * canvas = lv_canvas_create(lv_screen_active());
@@ -417,27 +481,150 @@ static void generate_mask(lv_draw_buf_t * mask)
     lv_obj_delete(canvas);
 }
 
+
+
+void create_roller(void)
+{
+	lv_obj_t *ui_effects_subpage_body_cont;
+	lv_obj_t *ui_effects_panel, *ui_effects_header_lbl;
+	lv_obj_t *ui_roller_panel, *ui_effects_roller;
+	static uint8_t mask_generated =0;
+	    //lv_obj_remove_style_all(ui_lightsync_effect_subpage);
+	    //lv_obj_set_size(ui_lightsync_effect_subpage, SCREEN_W, SCREEN_H);
+	   // lv_obj_remove_flag(ui_lightsync_effect_subpage, LV_OBJ_FLAG_SCROLLABLE);
+	    //lv_obj_set_style_bg_color(ui_lightsync_effect_subpage, lv_color_hex(0x050505), LV_PART_MAIN | LV_STATE_DEFAULT);
+	   // lv_obj_set_style_bg_opa(ui_lightsync_effect_subpage, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+	   // lv_obj_t * header = ui_create_header(ui_lightsync_effect_subpage, "Back", &ui_img_back_arrow);
+	  //  lv_obj_align(header, LV_ALIGN_TOP_MID, 0, 0);
+	   // lv_obj_t * title_row = lv_obj_get_child(header, 2);
+
+	  //  if (title_row)
+	 //   {
+	 //       lv_obj_add_flag(title_row, LV_OBJ_FLAG_CLICKABLE);
+	 //       lv_obj_add_event_cb(title_row, slide_out_subpage, LV_EVENT_CLICKED, ui_lightsync_effect_subpage);
+	 //       lv_obj_set_style_translate_x(title_row, -13, 0);
+	 //   }
+
+	    ui_effects_subpage_body_cont = lv_obj_create(lv_screen_active());
+	    lv_obj_remove_style_all(ui_effects_subpage_body_cont);
+	    lv_obj_set_width(ui_effects_subpage_body_cont, 208);
+	    lv_obj_set_height(ui_effects_subpage_body_cont, 220);
+	    //lv_obj_align_to(ui_effects_subpage_body_cont, header, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
+	    lv_obj_set_x(ui_effects_subpage_body_cont, 0);
+	    lv_obj_set_y(ui_effects_subpage_body_cont, 20);
+	    lv_obj_set_align(ui_effects_subpage_body_cont, LV_ALIGN_CENTER);
+	    lv_obj_remove_flag(ui_effects_subpage_body_cont, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	    lv_obj_add_flag(ui_effects_subpage_body_cont, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+	    lv_obj_set_flex_flow(ui_effects_subpage_body_cont, LV_FLEX_FLOW_COLUMN);
+	    lv_obj_set_flex_align(ui_effects_subpage_body_cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+	    lv_obj_set_style_pad_row(ui_effects_subpage_body_cont, 8, 0);
+
+	    ui_effects_panel = lv_obj_create(ui_effects_subpage_body_cont);
+	    lv_obj_remove_style_all(ui_effects_panel);
+	    lv_obj_set_size(ui_effects_panel, 208, 30);
+	    lv_obj_set_flex_flow(ui_effects_panel, LV_FLEX_FLOW_ROW);
+	    lv_obj_set_flex_align(ui_effects_panel, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+	   // ui_effects_icon_img = lv_image_create(ui_effects_panel);
+	   // lv_image_set_src(ui_effects_icon_img, &ui_img_effect);
+	   // lv_image_set_scale(ui_effects_icon_img, 120);
+	   // lv_obj_set_style_translate_x(ui_effects_icon_img, -14, 0);
+
+	   // ui_effects_header_lbl = lv_label_create(ui_effects_panel);
+	  //  lv_label_set_text(ui_effects_header_lbl, "Effect");
+	  //  lv_obj_set_style_text_color(ui_effects_header_lbl, lv_color_hex(0xFFFFFF), 0);
+	 //   lv_obj_set_style_text_font(ui_effects_header_lbl, &lv_font_montserrat_16, 0);
+	 //   lv_obj_set_style_pad_right(ui_effects_header_lbl, 25, 0);
+	 //   lv_obj_set_style_translate_x(ui_effects_header_lbl, -17, 0);
+	 //   lv_obj_remove_flag(ui_effects_header_lbl, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+
+	    //ui_roller_value_lbl = lv_label_create(ui_effects_panel);
+	   // lv_label_set_text(ui_roller_value_lbl, "Breathing");
+	   // lv_obj_set_style_text_color(ui_roller_value_lbl, lv_color_hex(0xFFFFFF), 0);
+	   // lv_obj_set_style_text_font(ui_roller_value_lbl, &lv_font_montserrat_14, 0);
+
+	    ui_roller_panel = lv_obj_create(ui_effects_subpage_body_cont);
+	    lv_obj_remove_style_all(ui_roller_panel);
+	    lv_obj_set_width(ui_roller_panel, 208);
+	    lv_obj_set_height(ui_roller_panel, 120);
+	    lv_obj_set_style_bg_color(ui_roller_panel, lv_color_hex(0x171717), 0);
+	    lv_obj_set_style_bg_opa(ui_roller_panel, LV_OPA_COVER, LV_PART_MAIN);
+	    lv_obj_set_style_radius(ui_roller_panel, 4, 0);
+
+#if 0
+	    LV_DRAW_BUF_DEFINE_STATIC(fade_mask, 208, 120, LV_COLOR_FORMAT_L8);
+#if 1
+	    if (!mask_generated)
+	    {
+	        LV_DRAW_BUF_INIT_STATIC(fade_mask);
+	        generate_mask(&fade_mask);
+	      //  void * raw_buffer_ptr = fade_mask.data;
+	      //  uint32_t buffer_size = 208 * 120;
+	      //  SCB_CleanInvalidateDCache_by_Addr((uint32_t*)raw_buffer_ptr, buffer_size);
+	        mask_generated = true;
+	    }
+#endif
+	    ui_effects_roller = lv_roller_create(ui_roller_panel);
+	//    lv_roller_set_options(ui_effects_roller, "Off\nFixed\nBreathing\nMetallic Iridescence\nColor Wave\nColor Cycle\nRipple",
+	//                          LV_ROLLER_MODE_NORMAL);
+	    lv_roller_set_options(ui_effects_roller, roller_item_list,
+	                          LV_ROLLER_MODE_NORMAL);
+
+	    lv_roller_set_selected(ui_effects_roller, 2, LV_ANIM_ON);
+	    lv_obj_set_width(ui_effects_roller, 142);
+	    lv_obj_set_height(ui_effects_roller, 120);
+	   // lv_obj_center(ui_effects_roller);
+	    lv_obj_set_align(ui_effects_roller, LV_ALIGN_RIGHT_MID);
+	    lv_roller_set_visible_row_count(ui_effects_roller, 5);
+	    lv_obj_add_flag(ui_effects_roller, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+	    lv_obj_set_scrollbar_mode(ui_effects_roller, LV_SCROLLBAR_MODE_OFF);
+
+	    lv_obj_set_style_bg_opa(ui_effects_roller, LV_OPA_TRANSP, LV_PART_MAIN);
+	    lv_obj_set_style_bg_opa(ui_effects_roller, LV_OPA_50, LV_PART_SELECTED);
+	    lv_obj_set_style_bg_color(ui_effects_roller, lv_color_hex(0x008B8B), LV_PART_SELECTED);
+	    lv_obj_set_style_border_width(ui_effects_roller, 0, LV_PART_MAIN);
+	    lv_obj_set_style_radius(ui_effects_roller, 4, LV_PART_SELECTED);
+
+	    lv_obj_set_style_text_color(ui_effects_roller, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+	    lv_obj_set_style_text_color(ui_effects_roller, lv_color_hex(0x00B6FA), LV_PART_SELECTED);
+	    lv_obj_set_style_text_font(ui_effects_roller, &lv_font_montserrat_14, 0);
+	    lv_obj_set_style_text_line_space(ui_effects_roller, 7, 0);
+
+	    lv_obj_set_style_bitmap_mask_src(ui_effects_roller, &fade_mask, LV_PART_MAIN);
+	    lv_obj_add_event_cb(ui_effects_roller, roller_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+#endif
+
+	    roller_p1 = lv_comp_roller_draw(ui_roller_panel, 120, 142, NULL);
+}
+
+
 void lv_create_roller(void)
 {
     static lv_style_t style,style_sel;
 
     lv_style_init(&style);
-    lv_style_set_bg_color(&style, lv_color_make(0x3F, 0x3F, 0x3F));
-    lv_style_set_text_color(&style, lv_color_make(0x74, 0x74, 0x74));//lv_color_make(0x00, 0xD2, 0xFC));
+    lv_style_set_bg_color(&style, lv_color_make(0x38, 0x38, 0x38));//24 not ok
+    lv_style_set_text_color(&style, lv_color_make(0x78, 0x78, 0x78));//lv_color_make(0x00, 0xD2, 0xFC));
     lv_style_set_width(&style, ROLLER_WIDTH);
     lv_style_set_height(&style, ROLLER_HEIGHT);
     lv_style_set_border_width(&style, 0);
     lv_style_set_radius(&style, 4);
+    lv_style_set_text_align(&style, LV_ALIGN_CENTER);
  // lv_style_set_bg_grad_color(&style,  lv_color_make(0xab, 0xdc, 0xee));
 
 
     lv_style_init(&style_sel);
     lv_style_set_bg_color(&style_sel, lv_color_make(0x00, 0x9A, 0xB8));
     lv_style_set_bg_opa(&style_sel, LV_OPA_50);
-    lv_style_set_text_color(&style_sel,  lv_color_make(0x00, 0xD2, 0xFC));
-    lv_style_set_width(&style_sel, ROLLER_WIDTH);
+    lv_style_set_text_color(&style_sel,  lv_color_make(0x4C, 0xC0, 0xEC));
+    lv_style_set_width(&style_sel, ROLLER_WIDTH - 20);
     lv_style_set_height(&style_sel, 24);
     lv_style_set_radius(&style_sel, 4);
+    lv_style_set_text_align(&style_sel, LV_ALIGN_CENTER);
+    lv_style_set_align(&style_sel, LV_ALIGN_CENTER);
+
 
     roller1 = lv_roller_create(lv_screen_active());
     lv_obj_add_style(roller1, &style, LV_PART_MAIN);
@@ -507,91 +694,18 @@ void lv_create_roller(void)
    // lv_timer_create(timer_step_cb, 1000, NULL);
     /* Create the mask to make the top and bottom part of roller faded.
      * The width and height are empirical values for simplicity*/
-   // LV_DRAW_BUF_DEFINE_STATIC(mask, 110, 150, LV_COLOR_FORMAT_L8);
-   // LV_DRAW_BUF_INIT_STATIC(mask);
+    LV_DRAW_BUF_DEFINE_STATIC(mask, 142, 108, LV_COLOR_FORMAT_L8);
+    LV_DRAW_BUF_INIT_STATIC(mask);
 
-   // generate_mask(&mask);
-   // lv_obj_set_style_bitmap_mask_src(roller1, &mask, 0);
-}
+    generate_mask(&mask);
 
-
-
-
-void lv_draw_actubar(actu_bar *bar, int32_t x, int32_t y)
-{
-
-    /*Create a buffer for the canvas*/
-    LV_DRAW_BUF_DEFINE_STATIC(draw_bar_buf, BAR_CANVAS_WIDTH, BAR_CANVAS_HEIGHT, LV_COLOR_FORMAT_ARGB8888);
-    LV_DRAW_BUF_INIT_STATIC(draw_bar_buf);
-
-    /*Create a canvas and initialize its palette*/
-    bar->canvas = lv_canvas_create(lv_screen_active());
-    lv_canvas_set_draw_buf(bar->canvas, &draw_bar_buf);
-    lv_canvas_fill_bg(bar->canvas, lv_color_make(0x3F, 0x3F, 0x3F), LV_OPA_COVER);
-
-    lv_canvas_init_layer(bar->canvas, &actu_bar1->layer);
-
-    lv_draw_line_dsc_init(&bar->dsc);
-
-    bar->dsc.color = lv_palette_main(LV_PALETTE_GREY);
-    bar->dsc.width = BAR_HEIGHT;
-    bar->dsc.round_end = 1;
-    bar->dsc.round_start = 1;
-
-
-    for(int i=0;i< ROLLER_ITEM_MAX ;i++)
-    {
-
-    	bar->dsc.p1.x = 0;
-    	bar->dsc.p1.y = i*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
-    	bar->dsc.p2.x = BAR_CANVAS_WIDTH;
-    	bar->dsc.p2.y = i*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
-    	lv_draw_line(&bar->layer, &bar->dsc);
-
-    }
-
-    lv_canvas_finish_layer(bar->canvas, &bar->layer);
-
-    lv_obj_set_pos(bar->canvas, x,y);
-
-    bar->sel_index =0;
-
+    lv_obj_set_style_bitmap_mask_src(roller1, &mask, LV_PART_MAIN);
 
 }
 
 
 
-void lv_set_actubar_value(actu_bar *bar, uint8_t value)
-{
 
-	static uint8_t bar_offset = 2;
-
-	value = value;
-
-	if(value < ROLLER_ITEM_MAX)
-	{
-	    bar->dsc.color = lv_palette_main(LV_PALETTE_GREY);
-	    bar->dsc.p1.x = 0;
-	    bar->dsc.p1.y = bar->sel_index*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
-	    bar->dsc.p2.x = BAR_CANVAS_WIDTH;
-	    bar->dsc.p2.y = bar->sel_index*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
-    	lv_draw_line(&bar->layer, &bar->dsc);
-
-    	bar->dsc.color = lv_palette_main(LV_PALETTE_BLUE);
-    	bar->dsc.p1.x = 0;
-    	bar->dsc.p1.y = value*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
-    	bar->dsc.p2.x = BAR_CANVAS_WIDTH;
-    	bar->dsc.p2.y = value*(BAR_HEIGHT + BAR_GAP_HEIGHT) + BAR_HEIGHT_OFFSET;
-    	lv_draw_line(&bar->layer, &bar->dsc);
-
-    	bar->sel_index = value;
-
-	    lv_canvas_finish_layer(bar->canvas, &bar->layer);
-
-	}
-
-
-}
 
 void lv_example_bar(void)
 {
@@ -608,7 +722,7 @@ void lv_example_bar(void)
    // lv_style_set_bg_image_tiled(&style_indic, true);
 
     levbar = lv_bar_create(lv_screen_active());
-    lv_obj_set_style_bg_image_src(levbar, &img_skew_strip2, LV_PART_MAIN);
+  //  lv_obj_set_style_bg_image_src(levbar, &img_skew_strip2, LV_PART_MAIN);
     lv_obj_set_style_bg_image_tiled(levbar, true, LV_PART_MAIN);
     lv_obj_set_style_bg_color(levbar, lv_color_make(0x24, 0x24, 0x24), LV_PART_MAIN);
     //lv_obj_set_style_bg_color(bar, lv_palette_main(LV_PALETTE_BLUE), LV_PART_INDICATOR);
