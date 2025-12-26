@@ -24,7 +24,7 @@
 typedef struct {
 	uint8_t row_count;
 	uint8_t row_visible;
-	void *row_list;
+	uint8_t *row_list;
 
 }roller_data_t;
 

@@ -52,10 +52,21 @@ int32_t base_y;
 uint32_t base_y_start;
 int32_t new_y;
 
-lv_obj_t * roller1, *roller_p1;
+roller_t * roller1, *roller_p1;
 
 const lv_font_t * font_large;
 const lv_font_t * font_normal;
+
+const roller_data_t roller_data =
+{
+		.row_count = ROLLER_ITEM_MAX,
+		.row_visible = 5,
+		.row_list = "0.0mm\n0.1mm\n0.2mm\n0.3mm\n0.4mm\n0.5mm\n0.6mm\n0.7mm\n0.8mm\n0.9mm\n"
+    			"1.0mm\n1.1mm\n1.2mm\n1.3mm\n1.4mm\n1.5mm\n1.6mm\n1.7mm\n1.8mm\n1.9mm\n"
+				"2.0mm\n2.1mm\n2.2mm\n2.3mm\n2.4mm\n2.5mm\n2.6mm\n2.7mm\n2.8mm\n2.9mm\n"
+				"3.0mm\n3.1mm\n3.2mm\n3.3mm\n3.4mm\n3.5mm"
+};
+
 const uint8_t roller_item_list[] ="0.0mm\n0.1mm\n0.2mm\n0.3mm\n0.4mm\n0.5mm\n0.6mm\n0.7mm\n0.8mm\n0.9mm\n"
         			"1.0mm\n1.1mm\n1.2mm\n1.3mm\n1.4mm\n1.5mm\n1.6mm\n1.7mm\n1.8mm\n1.9mm\n"
 					"2.0mm\n2.1mm\n2.2mm\n2.3mm\n2.4mm\n2.5mm\n2.6mm\n2.7mm\n2.8mm\n2.9mm\n"
@@ -596,7 +607,10 @@ void create_roller(void)
 
 #endif
 
-	    roller_p1 = lv_comp_roller_draw(ui_roller_panel, 120, 142, NULL);
+
+	    roller_p1 = lv_comp_roller_draw(ui_roller_panel, 120, 142, &roller_data);
+
+	   // lv_comp_roller_set_data(roller_p1, data);
 }
 
 

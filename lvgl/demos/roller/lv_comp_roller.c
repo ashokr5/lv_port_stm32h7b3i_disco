@@ -96,14 +96,14 @@ roller_t* lv_comp_roller_draw(lv_obj_t *parent, uint8_t height, uint8_t weight, 
 
     roller->obj = lv_roller_create(parent);
 
-	lv_comp_roller_set_data(roller, &data_default);
+	lv_comp_roller_set_data(roller, data);
 
     lv_roller_set_selected(roller->obj, 2, LV_ANIM_ON);
     lv_obj_set_width(roller->obj, weight);
     lv_obj_set_height(roller->obj, height);
     lv_obj_set_align(roller->obj, LV_ALIGN_RIGHT_MID);
 
-    lv_comp_roller_set_style(roller, data);
+    lv_comp_roller_set_style(roller, &style_default);
 
     lv_obj_add_flag(roller->obj, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
     lv_obj_set_scrollbar_mode(roller->obj, LV_SCROLLBAR_MODE_OFF);
@@ -117,17 +117,19 @@ roller_t* lv_comp_roller_draw(lv_obj_t *parent, uint8_t height, uint8_t weight, 
 void lv_comp_roller_set_data(roller_t *roller, roller_data_t *data)
 {
 
-	if(NULL != data->row_list)
+	if(NULL != data)
 	{
 	    lv_roller_set_options(roller->obj, data->row_list, LV_ROLLER_MODE_NORMAL);
+	    lv_roller_set_visible_row_count(roller->obj, data->row_visible);
 	}
 	else
 	{
 	    lv_roller_set_options(roller->obj, data_default.row_list, LV_ROLLER_MODE_NORMAL);
+	    lv_roller_set_visible_row_count(roller->obj, data_default.row_visible);
 	}
 
 
-    lv_roller_set_visible_row_count(roller->obj, data->row_visible);
+
 
 
 }
